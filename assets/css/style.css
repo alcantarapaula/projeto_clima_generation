@@ -17,8 +17,17 @@ html[data-mode="day"] {
   --bg-from:          #bde0f7;
   --bg-to:            #fdf3e3;
 
-  --orb-a-color:      radial-gradient(circle, #fde68a 0%, #fbbf24 55%, transparent 100%);
-  --orb-b-color:      radial-gradient(circle, #bae6fd 0%, #7dd3fc 55%, transparent 100%);
+  --orb-a-color: radial-gradient(
+  ellipse at top right,
+  rgba(253, 224, 71, 0.55) 0%,
+  rgba(251, 191, 36, 0.25) 40%,
+  transparent 70%
+  );
+  --orb-b-color: radial-gradient(
+  ellipse at bottom left,
+  rgba(125, 211, 252, 0.35) 0%,
+  transparent 70%
+  );
 
   --text-primary:     #19243a;
   --text-secondary:   #5b6a87;
@@ -51,8 +60,16 @@ html[data-mode="night"] {
   --bg-from:          #020811;
   --bg-to:            #091526;
 
-  --orb-a-color:      radial-gradient(circle, rgba(90, 110, 240, 0.22) 0%, rgba(55, 75, 200, 0.10) 55%, transparent 100%);
-  --orb-b-color:      radial-gradient(circle, rgba(25, 45, 130, 0.28) 0%, rgba(10, 25, 80, 0.08) 55%, transparent 100%);
+  --orb-a-color: radial-gradient(
+  ellipse at top right,
+  rgba(99, 102, 241, 0.25) 0%,
+  transparent 70%
+  );
+  --orb-b-color: radial-gradient(
+  ellipse at bottom left,
+  rgba(30, 58, 138, 0.35) 0%,
+  transparent 70%
+  );  
 
   --text-primary:     #dde9ff;
   --text-secondary:   #7a98c0;
@@ -375,7 +392,7 @@ body {
    ════════════════════════════════════════════════ */
 .weather-wrap {
   width: 100%;
-  max-width: 400px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -468,14 +485,18 @@ body {
   transition: color 0.8s;
 }
 
+
 .wc-time {
   font-size: 0.9375rem;
   font-weight: 300;
   color: var(--text-secondary);
   letter-spacing: 0.05em;
   text-align: right;
-  white-space: nowrap;
-  flex-shrink: 0;
+
+  white-space: normal;       /* PERMITE QUEBRAR */
+  word-break: break-word;    /* evita overflow */
+  max-width: 140px;          /* controla largura */
+
   transition: color 0.8s;
 }
 
@@ -507,17 +528,18 @@ body {
   line-height: 1;
 }
 
+
 .temp-val {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(4.5rem, 16vw, 6.5rem);
-  font-weight: 300;
-  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif; /* ALTERADO */
+  font-size: clamp(4.2rem, 14vw, 5.8rem); /* levemente menor */
+  font-weight: 500;
+  letter-spacing: -0.02em; /* evita "espalhar" */
   line-height: 1;
   transition: color 0.8s;
 }
 
 .temp-deg {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 2.2rem;
   font-weight: 300;
   color: var(--text-secondary);
@@ -531,6 +553,7 @@ body {
   color: var(--text-primary);
   letter-spacing: 0.02em;
   transition: color 0.8s;
+  margin-top: 0.3rem;
 }
 
 .wc-feels {
@@ -606,4 +629,14 @@ body {
   .weather-card    { padding: 1.625rem 1.5rem; }
   .brand-title     { font-size: 3rem; }
   .wc-details      { gap: 1rem; }
+
+  .wc-header {
+    align-items: flex-start;
+  }
+
+  .wc-time {
+    text-align: right;
+    font-size: 0.85rem;
+    max-width: 120px;
+  }
 }

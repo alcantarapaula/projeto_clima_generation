@@ -98,29 +98,29 @@ function applyTheme() {
   }
 }
 
-/* ════════════════════════════════════════════════
-   FORMATAR HORA LOCAL (fuso da cidade)
-   ════════════════════════════════════════════════ */
+
 function formatLocalTime(timezone) {
   try {
     const now = new Date();
+
     const time = new Intl.DateTimeFormat('pt-BR', {
       timeZone: timezone,
-      hour:     '2-digit',
-      minute:   '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(now);
 
-    const weekday = new Intl.DateTimeFormat('pt-BR', {
+    const date = new Intl.DateTimeFormat('pt-BR', {
       timeZone: timezone,
       weekday: 'short',
+      day: 'numeric',
+      month: 'long',
     }).format(now);
 
-    // Ex: "ter · 14:25"
-    return `${weekday.replace('.', '')} · ${time}`;
+    // Ex: "seg, 30 de março · 14:25"
+    return `${date.replace('.', '')} · ${time}`;
+
   } catch {
-    return new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit', minute: '2-digit',
-    });
+    return new Date().toLocaleString('pt-BR');
   }
 }
 
@@ -171,9 +171,14 @@ async function fetchWeather(lat, lon) {
     const res = await fetch(`${WEATHER_URL}?${params}`);
     if (!res.ok) throw new Error(`Weather HTTP ${res.status}`);
     return await res.json();
-  } catch (err) {
+    } catch (err) {
     console.error('[Clima] fetchWeather:', err);
-    return null;
+
+    if (!navigator.onLine) {
+      return { error: 'offline' };
+    }
+
+    return { error: 'api' };
   }
 }
 
@@ -216,7 +221,12 @@ function renderSuggestions(cities) {
   suggestionsList.innerHTML = '';
 
   if (!cities.length) {
-    suggestionsList.classList.remove('open');
+    suggestionsList.innerHTML = `
+      <li class="suggestion-item" style="cursor: default;">
+        <span class="sug-name">Cidade não encontrada</span>
+      </li>
+    `;
+    suggestionsList.classList.add('open');
     return;
   }
 
@@ -272,14 +282,24 @@ async function selectCity(city) {
   elCityRegion.textContent = region;
   elLocalTime.textContent  = '—';
   elTempValue.textContent  = '—';
-  elCondition.textContent  = 'Carregando...';
-  elFeelsLike.textContent  = '';
+  elCondition.textContent = 'Erro ao carregar clima.';
+  elFeelsLike.textContent = 'Tente novamente mais tarde.';
   elHumidity.textContent   = '—';
   elWindSpeed.textContent  = '—';
   elWeatherIcon.className  = 'wi wi-na wc-weather-icon';
 
   // Busca os dados de clima
   const data = await fetchWeather(city.latitude, city.longitude);
+
+  if (data?.error === 'offline') {
+    elCondition.textContent = 'Sem conexão com a internet.';
+    return;
+  }
+
+  if (data?.error === 'api') {
+    elCondition.textContent = 'Erro na API de clima.';
+    return;
+  }
 
   if (!data || !data.current) {
     elCondition.textContent = 'Não foi possível carregar os dados.';
