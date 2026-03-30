@@ -375,3 +375,5 @@ applyTheme();
 
 // Verifica o tema a cada minuto (para a virada de 06h ou 18h)
 setInterval(applyTheme, 60_000);
+
+module.exports = { fetchWeather, searchCities };
