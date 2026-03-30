@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clima360</title>
 
-  <!-- Fonts -->
+  <!-- Fonts: Bodoni Moda (display) + Outfit (UI) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,300;0,6..96,400;0,6..96,500;1,6..96,300;1,6..96,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Weather Icons (font icons) -->
+  <!-- Weather Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" />
 
   <link rel="stylesheet" href="assets/css/style.css" />
@@ -24,6 +24,9 @@
       <div class="orb orb-a"></div>
       <div class="orb orb-b"></div>
     </div>
+
+    <!-- Weather animation canvas (sits between orbs and app content) -->
+    <canvas id="weatherCanvas" aria-hidden="true"></canvas>
 
     <!-- ══════════════════════════════
          SEARCH SCREEN
@@ -39,7 +42,6 @@
 
         <div class="search-field">
           <div class="input-box">
-            <!-- Search icon -->
             <svg class="ico-search" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="1.8"
                  stroke-linecap="round" stroke-linejoin="round"
@@ -60,11 +62,9 @@
               aria-controls="suggestionsList"
             />
 
-            <!-- Loading spinner -->
             <span class="loader-ring" id="loaderRing" aria-hidden="true"></span>
           </div>
 
-          <!-- Suggestions dropdown -->
           <ul class="suggestions" id="suggestionsList"
               role="listbox" aria-label="Sugestões de cidades"></ul>
         </div>
@@ -78,7 +78,6 @@
     <section class="screen hidden" id="weatherScreen">
       <div class="weather-wrap">
 
-        <!-- Back button -->
         <button class="back-btn" id="backBtn" aria-label="Voltar à busca">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -88,10 +87,8 @@
           <span>Voltar</span>
         </button>
 
-        <!-- Weather Card -->
         <div class="weather-card" id="weatherCard">
 
-          <!-- City & Time -->
           <header class="wc-header">
             <div class="wc-location">
               <h2 class="wc-city" id="cityName">—</h2>
@@ -100,7 +97,6 @@
             <time class="wc-time" id="localTime">—</time>
           </header>
 
-          <!-- Main weather info -->
           <div class="wc-main">
             <i class="wi wc-weather-icon" id="weatherIcon" aria-hidden="true"></i>
             <div class="wc-temp-block">
@@ -115,7 +111,6 @@
 
           <hr class="wc-divider" />
 
-          <!-- Extra details -->
           <footer class="wc-details">
             <div class="wc-detail-item">
               <i class="wi wi-humidity wc-detail-icon" aria-hidden="true"></i>

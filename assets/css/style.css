@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════
-   CLIMA — Style Sheet
+   CLIMA360 — Style Sheet
    Minimalista · Sofisticado · Dia & Noite
    ════════════════════════════════════════════════ */
 
@@ -11,22 +11,22 @@
 }
 
 /* ════════════════════════════════════════════════
-   TEMA: MODO DIA  (06h – 18h)
+   TEMA: MODO DIA  (determinado pelo fuso da cidade)
    ════════════════════════════════════════════════ */
 html[data-mode="day"] {
   --bg-from:          #bde0f7;
   --bg-to:            #fdf3e3;
 
   --orb-a-color: radial-gradient(
-  ellipse at top right,
-  rgba(253, 224, 71, 0.55) 0%,
-  rgba(251, 191, 36, 0.25) 40%,
-  transparent 70%
+    ellipse at top right,
+    rgba(253, 224, 71, 0.55) 0%,
+    rgba(251, 191, 36, 0.25) 40%,
+    transparent 70%
   );
   --orb-b-color: radial-gradient(
-  ellipse at bottom left,
-  rgba(125, 211, 252, 0.35) 0%,
-  transparent 70%
+    ellipse at bottom left,
+    rgba(125, 211, 252, 0.35) 0%,
+    transparent 70%
   );
 
   --text-primary:     #19243a;
@@ -50,26 +50,29 @@ html[data-mode="day"] {
   --divider:          rgba(120, 150, 190, 0.18);
   --loader-color:     #d97706;
 
-  --brand-icon:       "wi-day-sunny";
+  /* rain drop color for day mode */
+  --rain-color:       rgba(120, 170, 220, 0.55);
+  --snow-color:       rgba(220, 235, 255, 0.85);
+  --lightning-color:  rgba(255, 240, 180, 0.18);
 }
 
 /* ════════════════════════════════════════════════
-   TEMA: MODO NOITE  (18h – 06h)
+   TEMA: MODO NOITE  (determinado pelo fuso da cidade)
    ════════════════════════════════════════════════ */
 html[data-mode="night"] {
   --bg-from:          #020811;
   --bg-to:            #091526;
 
   --orb-a-color: radial-gradient(
-  ellipse at top right,
-  rgba(99, 102, 241, 0.25) 0%,
-  transparent 70%
+    ellipse at top right,
+    rgba(99, 102, 241, 0.25) 0%,
+    transparent 70%
   );
   --orb-b-color: radial-gradient(
-  ellipse at bottom left,
-  rgba(30, 58, 138, 0.35) 0%,
-  transparent 70%
-  );  
+    ellipse at bottom left,
+    rgba(30, 58, 138, 0.35) 0%,
+    transparent 70%
+  );
 
   --text-primary:     #dde9ff;
   --text-secondary:   #7a98c0;
@@ -91,6 +94,11 @@ html[data-mode="night"] {
 
   --divider:          rgba(80, 120, 210, 0.16);
   --loader-color:     #93c5fd;
+
+  /* rain drop color for night mode */
+  --rain-color:       rgba(160, 200, 255, 0.45);
+  --snow-color:       rgba(220, 235, 255, 0.90);
+  --lightning-color:  rgba(200, 220, 255, 0.20);
 }
 
 /* ════════════════════════════════════════════════
@@ -156,11 +164,44 @@ body {
 }
 
 /* ════════════════════════════════════════════════
+   WEATHER ANIMATION CANVAS
+   Fica entre os orbs e o conteúdo do app
+   ════════════════════════════════════════════════ */
+#weatherCanvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+#weatherCanvas.active {
+  opacity: 1;
+}
+
+/* ════════════════════════════════════════════════
+   LIGHTNING FLASH
+   Ativado via JS para tempestades
+   ════════════════════════════════════════════════ */
+@keyframes lightning-strike {
+  0%   { background: transparent; }
+  8%   { background: var(--lightning-color); }
+  16%  { background: transparent; }
+  22%  { background: var(--lightning-color); }
+  36%  { background: transparent; }
+}
+
+body.lightning-flash {
+  animation: lightning-strike 0.45s ease-out forwards;
+}
+
+/* ════════════════════════════════════════════════
    APP SHELL
    ════════════════════════════════════════════════ */
 .app {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   min-height: 100dvh;
 }
@@ -218,12 +259,15 @@ body {
   50%       { transform: scale(1.10); opacity: 1; }
 }
 
+/* ── Bodoni Moda: font-optical-sizing é obrigatório para
+      ativar a variação óptica correta em tamanhos grandes ── */
 .brand-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Bodoni Moda', serif;
+  font-optical-sizing: auto;
   font-size: clamp(3.2rem, 9vw, 5rem);
   font-weight: 300;
   font-style: italic;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   color: var(--text-primary);
   line-height: 1;
   transition: color 0.8s ease;
@@ -325,8 +369,6 @@ body {
   box-shadow: 0 10px 38px rgba(0, 0, 0, 0.14);
   overflow: hidden;
   z-index: 200;
-
-  /* Animação de entrada/saída */
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
@@ -349,23 +391,12 @@ body {
   transition: background 0.15s ease;
 }
 
-.suggestion-item:last-child {
-  border-bottom: none;
-}
+.suggestion-item:last-child { border-bottom: none; }
 
 .suggestion-item:hover,
 .suggestion-item:focus {
   background: var(--suggest-hover);
   outline: none;
-}
-
-.sug-pin {
-  width: 14px;
-  height: 14px;
-  color: var(--accent);
-  flex-shrink: 0;
-  opacity: 0.85;
-  transition: color 0.8s;
 }
 
 .sug-name {
@@ -396,6 +427,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  position: relative;
+  z-index: 1;
 }
 
 /* Back button */
@@ -418,10 +451,7 @@ body {
   transition: all 0.22s ease;
 }
 
-.back-btn svg {
-  width: 15px;
-  height: 15px;
-}
+.back-btn svg { width: 15px; height: 15px; }
 
 .back-btn:hover {
   color: var(--text-primary);
@@ -449,14 +479,8 @@ body {
 }
 
 @keyframes card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(28px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Card Header */
@@ -468,7 +492,8 @@ body {
 }
 
 .wc-city {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Bodoni Moda', serif;
+  font-optical-sizing: auto;
   font-size: 1.75rem;
   font-weight: 500;
   color: var(--text-primary);
@@ -485,22 +510,19 @@ body {
   transition: color 0.8s;
 }
 
-
 .wc-time {
   font-size: 0.9375rem;
   font-weight: 300;
   color: var(--text-secondary);
   letter-spacing: 0.05em;
   text-align: right;
-
-  white-space: normal;       /* PERMITE QUEBRAR */
-  word-break: break-word;    /* evita overflow */
-  max-width: 140px;          /* controla largura */
-
+  white-space: normal;
+  word-break: break-word;
+  max-width: 140px;
   transition: color 0.8s;
 }
 
-/* Card Main (icon + temp + condition) */
+/* Card Main */
 .wc-main {
   display: flex;
   flex-direction: column;
@@ -528,18 +550,17 @@ body {
   line-height: 1;
 }
 
-
 .temp-val {
-  font-family: 'Outfit', sans-serif; /* ALTERADO */
-  font-size: clamp(4.2rem, 14vw, 5.8rem); /* levemente menor */
+  font-family: 'Bodoni Moda', serif;
+  font-size: clamp(4.2rem, 14vw, 5.8rem);
   font-weight: 500;
-  letter-spacing: -0.02em; /* evita "espalhar" */
+  letter-spacing: -0.02em;
   line-height: 1;
   transition: color 0.8s;
 }
 
 .temp-deg {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Bodoni Moda', serif;
   font-size: 2.2rem;
   font-weight: 300;
   color: var(--text-secondary);
@@ -630,9 +651,7 @@ body {
   .brand-title     { font-size: 3rem; }
   .wc-details      { gap: 1rem; }
 
-  .wc-header {
-    align-items: flex-start;
-  }
+  .wc-header       { align-items: flex-start; }
 
   .wc-time {
     text-align: right;
