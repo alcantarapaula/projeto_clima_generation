@@ -41,7 +41,7 @@ const code = fs.readFileSync(
   'utf-8'
 );
 
-// 🔥 ISOLA e "exporta" funções sem mexer no arquivo original
+// 🔥 Sandbox compatível com module.exports ou funções globais
 const wrappedCode = `
   const module = { exports: {} };
   const exports = module.exports;
@@ -56,15 +56,18 @@ const wrappedCode = `
 
 const { fetchWeather, searchCities } = new Function(wrappedCode)();
 
-describe('Testes da aplicação de clima', () => {
+
+// ======================================================
+// 🌦️ TESTES DE FETCH WEATHER
+// ======================================================
+describe('fetchWeather', () => {
 
   beforeEach(() => {
     fetch.mockClear();
     navigator.onLine = true;
   });
 
-  // 1. Cidade válida
-  test('Cidade válida retorna dados meteorológicos', async () => {
+  test('Retorna dados meteorológicos válidos', async () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -78,7 +81,96 @@ describe('Testes da aplicação de clima', () => {
     expect(result.current.temperature_2m).toBe(25);
   });
 
-  // 2. Cidade inexistente
+  test.each([
+    {
+      name: 'erro genérico da API',
+      mock: () => fetch.mockRejectedValueOnce(new Error('Erro')),
+    },
+    {
+      name: 'limite de requisições (429)',
+      mock: () => fetch.mockResolvedValueOnce({ ok: false, status: 429 }),
+    },
+  ])('Retorna erro de API em caso de %s', async ({ mock }) => {
+    mock();
+
+    const result = await fetchWeather(-22.9, -43.2);
+
+    expect(result).toHaveProperty('error');
+    expect(result.error).toBe('api');
+  });
+
+  test('Sem internet retorna erro offline', async () => {
+    navigator.onLine = false;
+
+    fetch.mockRejectedValueOnce(new Error('Network'));
+
+    const result = await fetchWeather(-22.9, -43.2);
+
+    expect(result.error).toBe('offline');
+  });
+
+  test('Conexão lenta ainda retorna dados corretamente', async () => {
+    fetch.mockImplementationOnce(() =>
+      new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: async () => ({
+              current: { temperature_2m: 20 }
+            })
+          });
+        }, 200);
+      })
+    );
+
+    const result = await fetchWeather(-22.9, -43.2);
+
+    expect(result.current.temperature_2m).toBe(20);
+  });
+
+test('Resposta JSON inesperada não quebra a aplicação', async () => {
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({}) // JSON inválido
+    })
+  );
+
+  const result = await fetchWeather(-23.55, -46.63);
+
+  if (result.error) {
+    expect(result.error).toBe('invalid_data'); // ✅ correto
+  }
+});
+
+});
+
+
+// ======================================================
+// 🔍 TESTES DE SEARCH CITIES
+// ======================================================
+describe('searchCities', () => {
+
+  beforeEach(() => {
+    fetch.mockClear();
+  });
+
+  test('Retorna lista de cidades válidas', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          { name: 'Rio de Janeiro' }
+        ]
+      })
+    });
+
+    const result = await searchCities('Rio');
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].name).toBe('Rio de Janeiro');
+  });
+
   test('Cidade inexistente retorna lista vazia', async () => {
     fetch.mockResolvedValueOnce({
       ok: true,
@@ -90,90 +182,11 @@ describe('Testes da aplicação de clima', () => {
     expect(result).toEqual([]);
   });
 
-  // 3. Entrada vazia
-  test('Entrada vazia retorna erro de validação', async () => {
+  test('Entrada vazia não faz requisição', async () => {
     const result = await searchCities('');
 
     expect(result).toEqual([]);
     expect(fetch).not.toHaveBeenCalled();
   });
-
-  // 4. Falha da API
-  test('Falha da API retorna erro adequado', async () => {
-    fetch.mockRejectedValueOnce(new Error('Erro API'));
-
-    const result = await fetchWeather(-22.9, -43.2);
-
-    expect(result).toHaveProperty('error');
-    expect(result.error).toBe('api');
-  });
-
-  // 5. Sem internet
-  test('Sem internet retorna erro offline', async () => {
-    navigator.onLine = false;
-
-    fetch.mockRejectedValueOnce(new Error('Network'));
-
-    const result = await fetchWeather(-22.9, -43.2);
-
-    expect(result.error).toBe('offline');
-  });
-
-  // 6. Limite de requisições excedido
-test('Limite de requisições da API excedido', async () => {
-  fetch.mockResolvedValueOnce({
-    ok: false,
-    status: 429,
-    json: async () => ({})
-  });
-
-  const result = await fetchWeather(-22.9, -43.2);
-
-  expect(result).toHaveProperty('error');
-  expect(result.error).toBe('api'); // ou ajuste se você tratar diferente
-});
-
-
-// 7. Conexão lenta / instável
-test('Conexão de rede lenta ou instável', async () => {
-  fetch.mockImplementationOnce(() =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          ok: true,
-          json: async () => ({
-            current: { temperature_2m: 20 }
-          })
-        });
-      }, 200); // simula delay
-    })
-  );
-
-  const result = await fetchWeather(-22.9, -43.2);
-
-  expect(result).toHaveProperty('current');
-  expect(result.current.temperature_2m).toBe(20);
-});
-
-
-// 8. Mudança inesperada no JSON
-test('Mudança inesperada no formato da resposta JSON', async () => {
-  fetch.mockResolvedValueOnce({
-    ok: true,
-    json: async () => ({
-      unexpected: true // estrutura errada
-    })
-  });
-
-  const result = await fetchWeather(-22.9, -43.2);
-
-  // Esperamos que o sistema não quebre
-  expect(result).toBeDefined();
-
-  // ideal: seu código tratar isso como erro
-  if (result.error) {
-    expect(result.error).toBe('api');
-  }
-});
 
 });

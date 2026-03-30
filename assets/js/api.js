@@ -1,24 +1,21 @@
 /* ════════════════════════════════════════════════
-   CLIMA — API & Lógica da Aplicação
-   Open-Meteo Geocoding + Weather APIs
+   CLIMA — API & Lógica da Aplicação (Refatorado)
    ════════════════════════════════════════════════ */
 
 // ── Endpoints ─────────────────────────────────────
-const GEO_URL     = 'https://geocoding-api.open-meteo.com/v1/search';
+const GEO_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
-
-// Tempo de espera (ms) após digitar antes de buscar
 const DEBOUNCE_MS = 340;
 
-/* ════════════════════════════════════════════════
-   MAPEAMENTO WMO → DESCRIÇÃO (pt-BR)
-   Referência: https://open-meteo.com/en/docs
-   ════════════════════════════════════════════════ */
+// ── Constantes reutilizáveis ──────────────────────
+const MIN_QUERY_LENGTH = 2;
+
+// ── Mapeamento WMO ───────────────────────────────
 const WMO_DESC = {
-  0:  'Céu limpo',
-  1:  'Principalmente limpo',
-  2:  'Parcialmente nublado',
-  3:  'Nublado',
+  0: 'Céu limpo',
+  1: 'Principalmente limpo',
+  2: 'Parcialmente nublado',
+  3: 'Nublado',
   45: 'Nevoeiro',
   48: 'Nevoeiro com geada',
   51: 'Garoa leve',
@@ -45,60 +42,73 @@ const WMO_DESC = {
   99: 'Tempestade com granizo forte',
 };
 
-/* ════════════════════════════════════════════════
-   MAPEAMENTO WMO → ÍCONE (Erik Flowers Weather Icons)
-   Variantes: dia (is_day = 1) e noite (is_day = 0)
-   ════════════════════════════════════════════════ */
+// ── Helpers ──────────────────────────────────────
+const isValidQuery = (query) =>
+  typeof query === 'string' && query.trim().length >= MIN_QUERY_LENGTH;
+
+const buildURL = (base, params) =>
+  `${base}?${new URLSearchParams(params)}`;
+
+
+/**
+ * Trata erros de requisição à API e padroniza o retorno.
+ *
+ * @function handleFetchError
+ * @param {string} context - Nome da função que gerou o erro
+ * @param {Error} err - Objeto de erro capturado
+ *
+ * @returns {{error: string}}
+ * Retorna:
+ * - 'offline' quando não há conexão com internet
+ * - 'api' para outros erros
+ *
+ * @example
+ * const result = handleFetchError('fetchWeather', error);
+ */
+const handleFetchError = (context, err) => {
+  console.error(`[Clima] ${context}:`, err);
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { error: 'offline' };
+  }
+
+  return { error: 'api' };
+};
+
+// ── Ícones ───────────────────────────────────────
 function getWeatherIcon(code, isDay) {
-  // Céu limpo
-  if (code === 0)          return isDay ? 'wi-day-sunny'              : 'wi-night-clear';
-  // Principalmente limpo / parcialmente nublado
-  if (code === 1)          return isDay ? 'wi-day-sunny-overcast'     : 'wi-night-alt-partly-cloudy';
-  if (code === 2)          return isDay ? 'wi-day-cloudy'             : 'wi-night-alt-partly-cloudy';
-  // Nublado
-  if (code === 3)          return isDay ? 'wi-day-cloudy'             : 'wi-night-alt-cloudy';
-  // Nevoeiro
-  if (code <= 48)          return isDay ? 'wi-day-fog'                : 'wi-night-fog';
-  // Garoa
-  if (code <= 57)          return isDay ? 'wi-day-sprinkle'           : 'wi-night-alt-sprinkle';
-  // Chuva
-  if (code <= 65)          return isDay ? 'wi-day-rain'               : 'wi-night-alt-rain';
-  // Chuva congelante
-  if (code <= 67)          return isDay ? 'wi-day-rain-mix'           : 'wi-night-alt-rain-mix';
-  // Neve
-  if (code <= 75)          return isDay ? 'wi-day-snow'               : 'wi-night-alt-snow';
-  // Granizo de neve
-  if (code === 77)         return isDay ? 'wi-day-snow'               : 'wi-night-alt-snow';
-  // Pancadas de chuva
-  if (code <= 82)          return isDay ? 'wi-day-showers'            : 'wi-night-alt-showers';
-  // Pancadas de neve
-  if (code <= 86)          return isDay ? 'wi-day-snow-wind'          : 'wi-night-alt-snow-wind';
-  // Tempestade
-  if (code >= 95)          return isDay ? 'wi-day-thunderstorm'       : 'wi-night-alt-thunderstorm';
+  if (code === 0) return isDay ? 'wi-day-sunny' : 'wi-night-clear';
+  if (code <= 2) return isDay ? 'wi-day-cloudy' : 'wi-night-alt-partly-cloudy';
+  if (code === 3) return isDay ? 'wi-day-cloudy' : 'wi-night-alt-cloudy';
+  if (code <= 48) return isDay ? 'wi-day-fog' : 'wi-night-fog';
+  if (code <= 57) return isDay ? 'wi-day-sprinkle' : 'wi-night-alt-sprinkle';
+  if (code <= 65) return isDay ? 'wi-day-rain' : 'wi-night-alt-rain';
+  if (code <= 67) return isDay ? 'wi-day-rain-mix' : 'wi-night-alt-rain-mix';
+  if (code <= 77) return isDay ? 'wi-day-snow' : 'wi-night-alt-snow';
+  if (code <= 82) return isDay ? 'wi-day-showers' : 'wi-night-alt-showers';
+  if (code <= 86) return isDay ? 'wi-day-snow-wind' : 'wi-night-alt-snow-wind';
+  if (code >= 95) return isDay ? 'wi-day-thunderstorm' : 'wi-night-alt-thunderstorm';
 
   return isDay ? 'wi-day-sunny' : 'wi-night-clear';
 }
 
-/* ════════════════════════════════════════════════
-   TEMA: DIA / NOITE
-   Das 06h às 18h → modo dia
-   Das 18h às 06h → modo noite
-   ════════════════════════════════════════════════ */
+// ── Tema ─────────────────────────────────────────
 function applyTheme() {
   const hour = new Date().getHours();
-  const mode = (hour >= 6 && hour < 18) ? 'day' : 'night';
+  const mode = hour >= 6 && hour < 18 ? 'day' : 'night';
+
   document.documentElement.setAttribute('data-mode', mode);
 
-  // Atualiza o ícone da marca conforme o modo
   const brandIcon = document.getElementById('brandIcon');
   if (brandIcon) {
-    brandIcon.className = mode === 'day'
-      ? 'wi wi-day-sunny brand-icon'
-      : 'wi wi-night-clear brand-icon';
+    brandIcon.className =
+      mode === 'day'
+        ? 'wi wi-day-sunny brand-icon'
+        : 'wi wi-night-clear brand-icon';
   }
 }
 
-
+// ── Data/Hora ────────────────────────────────────
 function formatLocalTime(timezone) {
   try {
     const now = new Date();
@@ -116,75 +126,124 @@ function formatLocalTime(timezone) {
       month: 'long',
     }).format(now);
 
-    // Ex: "seg, 30 de março · 14:25"
     return `${date.replace('.', '')} · ${time}`;
-
   } catch {
     return new Date().toLocaleString('pt-BR');
   }
 }
 
-/* ════════════════════════════════════════════════
-   API: BUSCAR CIDADES (Geocoding)
-   ════════════════════════════════════════════════ */
+// ── API: Buscar cidades ──────────────────────────
+/**
+ * Busca cidades com base em um termo usando a API de geocoding.
+ *
+ * @async
+ * @function searchCities
+ * @param {string} query - Nome da cidade (mínimo de 2 caracteres)
+ *
+ * @returns {Promise<Array<Object>>}
+ * Retorna uma lista de cidades encontradas.
+ * Retorna array vazio em caso de erro ou nenhuma correspondência.
+ *
+ * @throws {Error} Lança erro caso a requisição HTTP falhe (capturado internamente).
+ *
+ * @example
+ * const cities = await searchCities('São Paulo');
+ * console.log(cities);
+ */
 async function searchCities(query) {
-  if (!query || query.trim().length < 2) return [];
-
-  const params = new URLSearchParams({
-    name:     query.trim(),
-    count:    6,
-    language: 'pt',
-    format:   'json',
-  });
+  if (!isValidQuery(query)) return [];
 
   try {
-    const res = await fetch(`${GEO_URL}?${params}`);
-    if (!res.ok) throw new Error(`Geocoding HTTP ${res.status}`);
+    const url = buildURL(GEO_URL, {
+      name: query.trim(),
+      count: 6,
+      language: 'pt',
+      format: 'json',
+    });
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const data = await res.json();
-    return data.results || [];
+    return Array.isArray(data.results) ? data.results : [];
   } catch (err) {
     console.error('[Clima] searchCities:', err);
     return [];
   }
 }
 
-/* ════════════════════════════════════════════════
-   API: BUSCAR CLIMA (Open-Meteo)
-   ════════════════════════════════════════════════ */
+// ── API: Buscar clima ────────────────────────────
+/**
+ * Busca dados meteorológicos atuais de uma localização.
+ *
+ * @async
+ * @function fetchWeather
+ * @param {number} lat - Latitude da localização
+ * @param {number} lon - Longitude da localização
+ *
+ * @returns {Promise<Object>}
+ * Retorna os dados do clima no formato da API ou:
+ * { error: 'offline' } quando sem internet
+ * { error: 'api' } quando ocorre erro na API
+ * { error: 'invalid_data' } quando a resposta é inválida
+ *
+ * @throws {Error} Lança erro HTTP (ex: 404, 429) antes de ser tratado.
+ *
+ * @example
+ * const weather = await fetchWeather(-23.55, -46.63);
+ * if (!weather.error) {
+ *   console.log(weather.current.temperature_2m);
+ * }
+ */
 async function fetchWeather(lat, lon) {
-  const params = new URLSearchParams({
-    latitude:  lat,
-    longitude: lon,
-    current: [
-      'temperature_2m',
-      'apparent_temperature',
-      'relative_humidity_2m',
-      'weather_code',
-      'wind_speed_10m',
-      'is_day',
-    ].join(','),
-    timezone:         'auto',
-    wind_speed_unit:  'kmh',
-  });
-
   try {
-    const res = await fetch(`${WEATHER_URL}?${params}`);
-    if (!res.ok) throw new Error(`Weather HTTP ${res.status}`);
-    return await res.json();
-    } catch (err) {
-    console.error('[Clima] fetchWeather:', err);
+    const url = buildURL(WEATHER_URL, {
+      latitude: lat,
+      longitude: lon,
+      current: [
+        'temperature_2m',
+        'apparent_temperature',
+        'relative_humidity_2m',
+        'weather_code',
+        'wind_speed_10m',
+        'is_day',
+      ].join(','),
+      timezone: 'auto',
+      wind_speed_unit: 'kmh',
+    });
 
-    if (!navigator.onLine) {
-      return { error: 'offline' };
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+
+    // 🔥 Validação importante (evita quebrar UI)
+    if (!data || !data.current) {
+      return { error: 'invalid_data' };
     }
 
-    return { error: 'api' };
+    return data;
+  } catch (err) {
+    return handleFetchError('fetchWeather', err);
   }
 }
 
-/* ════════════════════════════════════════════════
-   UTILITÁRIO: DEBOUNCE
-   ════════════════════════════════════════════════ */
+// ── Debounce ─────────────────────────────────────
+/**
+ * Cria uma versão "debounced" de uma função.
+ *
+ * @function debounce
+ * @param {Function} fn - Função a ser executada
+ * @param {number} delay - Tempo de espera em milissegundos
+ *
+ * @returns {Function}
+ * Retorna uma nova função que só executa após o delay.
+ *
+ * @example
+ * const delayedSearch = debounce((value) => {
+ *   console.log(value);
+ * }, 300);
+ */
 function debounce(fn, delay) {
   let timer;
   return (...args) => {
@@ -193,36 +252,43 @@ function debounce(fn, delay) {
   };
 }
 
-/* ════════════════════════════════════════════════
-   REFERÊNCIAS DO DOM
-   ════════════════════════════════════════════════ */
-const searchScreen    = document.getElementById('searchScreen');
-const weatherScreen   = document.getElementById('weatherScreen');
-const cityInput       = document.getElementById('cityInput');
-const suggestionsList = document.getElementById('suggestionsList');
-const loaderRing      = document.getElementById('loaderRing');
-const backBtn         = document.getElementById('backBtn');
+// ── DOM helpers ──────────────────────────────────
+const getEl = (id) => document.getElementById(id);
 
-// Weather card elements
-const elCityName     = document.getElementById('cityName');
-const elCityRegion   = document.getElementById('cityRegion');
-const elLocalTime    = document.getElementById('localTime');
-const elWeatherIcon  = document.getElementById('weatherIcon');
-const elTempValue    = document.getElementById('tempValue');
-const elCondition    = document.getElementById('weatherCondition');
-const elFeelsLike    = document.getElementById('feelsLike');
-const elHumidity     = document.getElementById('humidity');
-const elWindSpeed    = document.getElementById('windSpeed');
+// ── Referências DOM ──────────────────────────────
+const searchScreen = getEl('searchScreen');
+const weatherScreen = getEl('weatherScreen');
+const cityInput = getEl('cityInput');
+const suggestionsList = getEl('suggestionsList');
+const loaderRing = getEl('loaderRing');
+const backBtn = getEl('backBtn');
 
-/* ════════════════════════════════════════════════
-   RENDERIZAR SUGESTÕES
-   ════════════════════════════════════════════════ */
-function renderSuggestions(cities) {
+const elCityName = getEl('cityName');
+const elCityRegion = getEl('cityRegion');
+const elLocalTime = getEl('localTime');
+const elWeatherIcon = getEl('weatherIcon');
+const elTempValue = getEl('tempValue');
+const elCondition = getEl('weatherCondition');
+const elFeelsLike = getEl('feelsLike');
+const elHumidity = getEl('humidity');
+const elWindSpeed = getEl('windSpeed');
+
+// ── UI helpers ───────────────────────────────────
+const setLoading = (state) =>
+  loaderRing?.classList[state ? 'add' : 'remove']('active');
+
+const clearSuggestions = () => {
   suggestionsList.innerHTML = '';
+  suggestionsList.classList.remove('open');
+};
+
+// ── Render sugestões ─────────────────────────────
+function renderSuggestions(cities) {
+  clearSuggestions();
 
   if (!cities.length) {
     suggestionsList.innerHTML = `
-      <li class="suggestion-item" style="cursor: default;">
+      <li class="suggestion-item">
         <span class="sug-name">Cidade não encontrada</span>
       </li>
     `;
@@ -230,150 +296,96 @@ function renderSuggestions(cities) {
     return;
   }
 
-  cities.forEach(city => {
+  cities.forEach((city) => {
     const li = document.createElement('li');
+
+    const region = [city.admin1, city.country]
+      .filter(Boolean)
+      .join(' · ');
+
     li.className = 'suggestion-item';
-    li.setAttribute('role', 'option');
-    li.setAttribute('tabindex', '0');
-
-    // Monta o texto de região: Estado · País
-    const region = [city.admin1, city.country].filter(Boolean).join(' · ');
-
     li.innerHTML = `
-      <svg class="sug-pin" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-        <circle cx="12" cy="9" r="2.5"/>
-      </svg>
       <span class="sug-name">${city.name}</span>
       <span class="sug-region">${region}</span>
     `;
 
-    li.addEventListener('click', () => selectCity(city));
-    li.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectCity(city);
-      }
-    });
-
+    li.onclick = () => selectCity(city);
     suggestionsList.appendChild(li);
   });
 
   suggestionsList.classList.add('open');
 }
 
-/* ════════════════════════════════════════════════
-   SELECIONAR CIDADE → BUSCAR E EXIBIR CLIMA
-   ════════════════════════════════════════════════ */
+// ── Seleção de cidade ────────────────────────────
 async function selectCity(city) {
-  // Fecha sugestões e troca de tela
-  suggestionsList.classList.remove('open');
+  clearSuggestions();
   cityInput.value = '';
 
   searchScreen.classList.add('hidden');
   weatherScreen.classList.remove('hidden');
 
-  // Mostra dados do lugar imediatamente (antes do fetch)
-  elCityName.textContent   = city.name;
-  const region             = [city.admin1, city.country].filter(Boolean).join(' · ');
-  elCityRegion.textContent = region;
-  elLocalTime.textContent  = '—';
-  elTempValue.textContent  = '—';
-  elCondition.textContent = 'Erro ao carregar clima.';
-  elFeelsLike.textContent = 'Tente novamente mais tarde.';
-  elHumidity.textContent   = '—';
-  elWindSpeed.textContent  = '—';
-  elWeatherIcon.className  = 'wi wi-na wc-weather-icon';
+  elCityName.textContent = city.name;
+  elCityRegion.textContent = [city.admin1, city.country]
+    .filter(Boolean)
+    .join(' · ');
 
-  // Busca os dados de clima
   const data = await fetchWeather(city.latitude, city.longitude);
 
-  if (data?.error === 'offline') {
-    elCondition.textContent = 'Sem conexão com a internet.';
+  if (data.error) {
+    elCondition.textContent =
+      data.error === 'offline'
+        ? 'Sem conexão com a internet.'
+        : 'Erro ao carregar clima.';
     return;
   }
 
-  if (data?.error === 'api') {
-    elCondition.textContent = 'Erro na API de clima.';
-    return;
-  }
+  const c = data.current;
 
-  if (!data || !data.current) {
-    elCondition.textContent = 'Não foi possível carregar os dados.';
-    elCondition.classList.add('error-msg');
-    return;
-  }
+  elTempValue.textContent = Math.round(c.temperature_2m);
+  elCondition.textContent = WMO_DESC[c.weather_code] || 'Desconhecido';
+  elFeelsLike.textContent = `Sensação térmica ${Math.round(
+    c.apparent_temperature
+  )}°C`;
+  elHumidity.textContent = `${c.relative_humidity_2m}%`;
+  elWindSpeed.textContent = `${Math.round(c.wind_speed_10m)} km/h`;
+  elLocalTime.textContent = formatLocalTime(data.timezone);
 
-  const c      = data.current;
-  const isDay  = c.is_day === 1;
-  const code   = c.weather_code;
-  const icon   = getWeatherIcon(code, isDay);
-  const desc   = WMO_DESC[code] ?? 'Desconhecido';
-
-  // Atualiza o DOM com os dados recebidos
-  elWeatherIcon.className   = `wi ${icon} wc-weather-icon`;
-  elTempValue.textContent   = Math.round(c.temperature_2m);
-  elCondition.textContent   = desc;
-  elFeelsLike.textContent   = `Sensação térmica ${Math.round(c.apparent_temperature)}°C`;
-  elHumidity.textContent    = `${c.relative_humidity_2m}%`;
-  elWindSpeed.textContent   = `${Math.round(c.wind_speed_10m)} km/h`;
-  elLocalTime.textContent   = formatLocalTime(data.timezone);
+  elWeatherIcon.className = `wi ${getWeatherIcon(
+    c.weather_code,
+    c.is_day === 1
+  )}`;
 }
 
-/* ════════════════════════════════════════════════
-   EVENT LISTENERS
-   ════════════════════════════════════════════════ */
-
-// Input com debounce
+// ── Eventos ──────────────────────────────────────
 const handleInput = debounce(async (value) => {
-  if (value.trim().length < 2) {
-    renderSuggestions([]);
+  if (!isValidQuery(value)) {
+    clearSuggestions();
     return;
   }
-  loaderRing.classList.add('active');
+
+  setLoading(true);
   const cities = await searchCities(value);
-  loaderRing.classList.remove('active');
+  setLoading(false);
+
   renderSuggestions(cities);
 }, DEBOUNCE_MS);
 
-cityInput.addEventListener('input', e => handleInput(e.target.value));
+cityInput?.addEventListener('input', (e) =>
+  handleInput(e.target.value)
+);
 
-// Fechar sugestões com Escape
-cityInput.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    renderSuggestions([]);
-    cityInput.blur();
-  }
-  // Navegar nas sugestões com seta para baixo
-  if (e.key === 'ArrowDown') {
-    const first = suggestionsList.querySelector('.suggestion-item');
-    if (first) first.focus();
-  }
-});
-
-// Fechar sugestões ao clicar fora
-document.addEventListener('click', e => {
-  if (!e.target.closest('.search-field')) {
-    suggestionsList.classList.remove('open');
-  }
-});
-
-// Botão voltar
-backBtn.addEventListener('click', () => {
+backBtn?.addEventListener('click', () => {
   weatherScreen.classList.add('hidden');
   searchScreen.classList.remove('hidden');
-  cityInput.focus();
 });
 
-/* ════════════════════════════════════════════════
-   INICIALIZAÇÃO
-   ════════════════════════════════════════════════ */
-applyTheme();
+// ── Inicialização ────────────────────────────────
+if (typeof document !== 'undefined') {
+  applyTheme();
+  setInterval(applyTheme, 60000);
+}
 
-// Verifica o tema a cada minuto (para a virada de 06h ou 18h)
-setInterval(applyTheme, 60_000);
-
-module.exports = { fetchWeather, searchCities };
+// ── Export (mantém compatível com seus testes) ──
+if (typeof module !== 'undefined') {
+  module.exports = { fetchWeather, searchCities };
+}
