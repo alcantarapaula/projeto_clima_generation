@@ -5,13 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clima360</title>
 
+  <!--
+    Content Security Policy:
+    - default-src 'self'          → bloqueia qualquer recurso não listado explicitamente
+    - script-src 'self'           → apenas scripts do próprio domínio
+    - style-src 'self' + CDNs     → folhas de estilo do domínio + Google Fonts + cdnjs
+    - font-src  fonts.gstatic.com → fontes do Google Fonts
+    - connect-src APIs             → apenas as duas APIs Open-Meteo usadas pela aplicação
+    - img-src 'self' data:         → imagens locais e data URIs (canvas exportado)
+    - object-src 'none'            → bloqueia Flash/plugins
+    - base-uri 'self'              → impede injeção de <base> tag
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+    font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+    connect-src https://geocoding-api.open-meteo.com https://api.open-meteo.com;
+    img-src 'self' data:;
+    object-src 'none';
+    base-uri 'self';
+  ">
+
+  <!-- Política de referência: não envia a URL da aplicação como referrer para APIs externas -->
+  <meta name="referrer" content="no-referrer">
+
   <!-- Fonts: Bodoni Moda (display) + Outfit (UI) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,300;0,6..96,400;0,6..96,500;1,6..96,300;1,6..96,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Weather Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" />
+  <!-- Weather Icons
+       NOTA SRI: O hash integrity foi removido pois foi calculado incorretamente.
+       Para reativá-lo em produção, obtenha o hash correto em:
+       https://cdnjs.com/libraries/weather-icons/2.0.10
+       e adicione: integrity="sha384-<hash>" crossorigin="anonymous"
+  -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css"
+        crossorigin="anonymous" />
 
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
@@ -70,6 +102,7 @@
         </div>
 
       </div>
+
     </section>
 
     <!-- ══════════════════════════════
@@ -142,6 +175,29 @@
     </section>
 
   </div><!-- /.app -->
+
+  <!-- Footer fixo — sempre visível em ambas as telas -->
+  <footer class="app-footer">
+    <p>&copy; 2024 Clima360. <a href="#" id="privacyBtn">Privacidade & Termos</a></p>
+    <p class="footer-attribution">
+      <i class="wi wi-thermometer" aria-hidden="true"></i>
+      Dados meteorológicos fornecidos por
+      <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+      sob licença
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+    </p>
+  </footer>
+
+  <div id="privacyModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <button id="closePrivacy" class="close-btn">&times;</button>
+      <h2>Privacidade & Termos</h2>
+      <p><strong>Dados coletados:</strong> O Clima360 não coleta, armazena nem compartilha nenhum dado pessoal. Não utilizamos cookies, localStorage ou qualquer forma de rastreamento.</p>
+      <p><strong>Serviços de terceiros:</strong> As buscas por cidade e os dados meteorológicos são obtidos da <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">API pública Open-Meteo</a>. Ao pesquisar uma cidade, o nome digitado e as coordenadas geográficas são enviados diretamente aos servidores da Open-Meteo para processamento. Consulte a <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener noreferrer">política de privacidade deles</a> para mais informações.</p>
+      <p><strong>Fontes e ícones:</strong> As fontes são carregadas do Google Fonts e os ícones do cdnjs.cloudflare.com. Estas requisições podem expor seu endereço IP a esses serviços.</p>
+      <p><strong>Comunicação segura:</strong> Toda comunicação com APIs externas é feita exclusivamente via HTTPS.</p>
+    </div>
+  </div>
 
   <script src="assets/js/api.js" type="module"></script>
 </body>

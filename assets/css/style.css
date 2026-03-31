@@ -10,6 +10,13 @@
   padding: 0;
 }
 
+/* Impede scroll no nível do documento — as telas são position:fixed
+   e cada uma gerencia seu próprio scroll internamente */
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+
 /* ════════════════════════════════════════════════
    TEMA: MODO DIA  (determinado pelo fuso da cidade)
    ════════════════════════════════════════════════ */
@@ -115,7 +122,8 @@ body {
   background: linear-gradient(150deg, var(--bg-from) 0%, var(--bg-to) 100%);
   min-height: 100dvh;
   color: var(--text-primary);
-  overflow: hidden;
+  overflow-x: hidden; 
+  overflow-y: auto; 
   transition: background 1s ease, color 0.8s ease;
 }
 
@@ -123,11 +131,10 @@ body {
    BACKGROUND ATMOSFÉRICO (ORBS)
    ════════════════════════════════════════════════ */
 .bg-canvas {
-  position: fixed;
+  position: fixed; /* O fundo fica parado enquanto o card rola */
   inset: 0;
+  z-index: -1;
   pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
 }
 
 .orb {
@@ -198,16 +205,23 @@ body.lightning-flash {
 
 /* ════════════════════════════════════════════════
    APP SHELL
+   Apenas encapsula os elementos de fundo (orbs, canvas).
+   As telas são position:fixed, então não contribuem
+   para a altura do .app.
    ════════════════════════════════════════════════ */
 .app {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   width: 100%;
   min-height: 100dvh;
 }
 
 /* ════════════════════════════════════════════════
-   SCREENS (transição entre telas)
+   SCREENS
+   Todas as telas são position:fixed e cobrem o
+   viewport inteiro. A troca entre elas é feita
+   via opacity + transform (sem display:none para
+   preservar a animação de entrada).
    ════════════════════════════════════════════════ */
 .screen {
   position: fixed;
@@ -236,6 +250,13 @@ body.lightning-flash {
   align-items: center;
   gap: 2.75rem;
 }
+
+#searchScreen {
+  /* O footer absolute dentro desta tela precisa
+     que o pai seja o contexto de posicionamento */
+  position: fixed;
+}
+
 
 /* ── Brand ─────────────────────────────────── */
 .brand {
@@ -422,13 +443,15 @@ body.lightning-flash {
    WEATHER SCREEN
    ════════════════════════════════════════════════ */
 
-/* Permite scroll quando o card cresce com a previsão */
+/* display:block sobrescreve o flex herdado de .screen.
+   Com block + overflow-y:auto o scroll interno funciona
+   de forma simples e previsível (flex com overflow
+   pode centralizar o conteúdo dentro da área de scroll,
+   empurrando o card para baixo do viewport). */
 #weatherScreen {
-  align-items: flex-start;
+  display: block;
   overflow-y: auto;
-  padding-top: 2rem;
-  padding-bottom: 2.5rem;
-  /* esconde a scrollbar mas mantém funcional */
+  padding: 2rem 1rem 6rem;
   scrollbar-width: none;
 }
 #weatherScreen::-webkit-scrollbar { display: none; }
@@ -441,7 +464,6 @@ body.lightning-flash {
   gap: 1.25rem;
   position: relative;
   z-index: 1;
-  /* centraliza horizontalmente dentro da tela com scroll */
   margin: 0 auto;
 }
 
@@ -474,14 +496,19 @@ body.lightning-flash {
 }
 
 /* ── Weather Card ──────────────────────────── */
+
 .weather-card {
+  width: 100%;
+  max-width: 560px;
   background: var(--card-bg);
+  backdrop-filter: blur(25px);
   border: 1px solid var(--card-border);
-  border-radius: 24px;
-  padding: 2rem 1.875rem;
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  border-radius: 40px;
+  padding: 3rem;
   box-shadow: var(--card-shadow);
+  z-index: 10;
+  /* flex+gap distribui o espaço entre header, temperatura,
+     dividers, detalhes e previsão de forma uniforme */
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
@@ -783,6 +810,83 @@ body.lightning-flash {
 /* cores por tema */
 html[data-mode="day"]   { --fc-max-color: #c2410c; --fc-min-color: #1d6faa; }
 html[data-mode="night"] { --fc-max-color: #fb923c; --fc-min-color: #60a5fa; }
+
+/* Footer fixo — visível em ambas as telas, sempre na base do viewport */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 0.75rem 1rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.footer-attribution {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.footer-attribution .wi {
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.app-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 8px;
+  pointer-events: auto;
+}
+
+/* Modal de Privacidade */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 2.5rem;
+  border-radius: 24px;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  box-shadow: var(--card-shadow);
+  color: var(--text-primary);
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
 
 /* ════════════════════════════════════════════════
    MENSAGEM DE ERRO
