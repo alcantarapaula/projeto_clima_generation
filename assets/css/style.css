@@ -597,6 +597,12 @@ body.lightning-flash {
   50%       { transform: translateY(-9px); }
 }
 
+.wc-temp-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .wc-temp {
   display: flex;
   align-items: flex-start;
