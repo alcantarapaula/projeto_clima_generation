@@ -451,7 +451,7 @@ body.lightning-flash {
 #weatherScreen {
   display: block;
   overflow-y: auto;
-  padding: 2rem 1rem 6rem;
+  padding: 2rem 1rem 2rem;
   scrollbar-width: none;
 }
 #weatherScreen::-webkit-scrollbar { display: none; }
@@ -811,7 +811,7 @@ body.lightning-flash {
 html[data-mode="day"]   { --fc-max-color: #c2410c; --fc-min-color: #1d6faa; }
 html[data-mode="night"] { --fc-max-color: #fb923c; --fc-min-color: #60a5fa; }
 
-/* Footer fixo — visível em ambas as telas, sempre na base do viewport */
+/* Footer fixo — visível apenas na tela de busca */
 .app-footer {
   position: fixed;
   bottom: 0;
@@ -826,6 +826,33 @@ html[data-mode="night"] { --fc-max-color: #fb923c; --fc-min-color: #60a5fa; }
   flex-direction: column;
   gap: 0.3rem;
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Esconde o footer fixo quando a tela de resultado está ativa */
+body.weather-visible .app-footer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Footer inline — dentro do scroll da tela de resultado */
+.weather-footer {
+  text-align: center;
+  padding: 1.5rem 1rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: color 0.8s;
+}
+
+.weather-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  pointer-events: auto;
+  transition: color 0.8s;
 }
 
 .footer-attribution {

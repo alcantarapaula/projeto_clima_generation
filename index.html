@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clima360</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg" />
+
   <!--
     Content Security Policy:
     - default-src 'self'          → bloqueia qualquer recurso não listado explicitamente
@@ -170,6 +173,18 @@
           </section>
 
         </div><!-- /.weather-card -->
+
+        <!-- Footer inline — aparece ao rolar até o final, sem sobrepor o card -->
+        <footer class="weather-footer">
+          <p>&copy; 2024 Clima360. <a href="#" id="privacyBtnWeather">Privacidade & Termos</a></p>
+          <p class="footer-attribution">
+            <i class="wi wi-thermometer" aria-hidden="true"></i>
+            Dados meteorológicos fornecidos por
+            <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+            sob licença
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+          </p>
+        </footer>
 
       </div>
     </section>

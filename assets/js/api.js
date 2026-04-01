@@ -717,6 +717,7 @@ async function selectCity(city) {
 
   searchScreen.classList.add('hidden');
   weatherScreen.classList.remove('hidden');
+  document.body.classList.add('weather-visible');
 
   elCityName.textContent   = city.name;
   elCityRegion.textContent = [city.admin1, city.country].filter(Boolean).join(' · ');
@@ -779,6 +780,7 @@ cityInput?.addEventListener('input', (e) => handleInput(e.target.value));
 backBtn?.addEventListener('click', () => {
   weatherScreen.classList.add('hidden');
   searchScreen.classList.remove('hidden');
+  document.body.classList.remove('weather-visible');
   stopAnimation();
   applyTheme(); // restaura tema pelo horário local ao voltar para busca
 });
@@ -794,14 +796,18 @@ if (typeof document !== 'undefined') {
 }
 
 // ── Modal de Privacidade ─────────────────────────
-const privacyBtn   = document.getElementById('privacyBtn');
-const privacyModal = document.getElementById('privacyModal');
-const closePrivacy = document.getElementById('closePrivacy');
+const privacyBtn        = document.getElementById('privacyBtn');
+const privacyBtnWeather = document.getElementById('privacyBtnWeather');
+const privacyModal      = document.getElementById('privacyModal');
+const closePrivacy      = document.getElementById('closePrivacy');
 
-privacyBtn?.addEventListener('click', (e) => {
+const openPrivacyModal = (e) => {
   e.preventDefault();
   privacyModal?.classList.remove('hidden');
-});
+};
+
+privacyBtn?.addEventListener('click', openPrivacyModal);
+privacyBtnWeather?.addEventListener('click', openPrivacyModal);
 
 closePrivacy?.addEventListener('click', () => {
   privacyModal?.classList.add('hidden');
