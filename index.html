@@ -38,12 +38,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,300;0,6..96,400;0,6..96,500;1,6..96,300;1,6..96,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Weather Icons
-       NOTA SRI: O hash integrity foi removido pois foi calculado incorretamente.
-       Para reativá-lo em produção, obtenha o hash correto em:
-       https://cdnjs.com/libraries/weather-icons/2.0.10
-       e adicione: integrity="sha384-<hash>" crossorigin="anonymous"
-  -->
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css"
         crossorigin="anonymous" />
@@ -106,11 +100,19 @@
 
       </div>
 
-    </section>
+      <!-- Footer estático — no fluxo do scroll, nunca sobrepõe conteúdo -->
+      <footer class="app-footer" id="searchFooter">
+        <p>&copy; 2024 Clima360. <a href="#" id="privacyBtn">Privacidade & Termos</a></p>
+        <p class="footer-attribution">
+          <i class="wi wi-thermometer" aria-hidden="true"></i>
+          Dados meteorológicos fornecidos por
+          <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+          sob licença
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+        </p>
+      </footer>
 
-    <!-- ══════════════════════════════
-         WEATHER SCREEN
-    ══════════════════════════════ -->
+    </section>
     <section class="screen hidden" id="weatherScreen">
       <div class="weather-wrap">
 
@@ -174,22 +176,22 @@
 
         </div><!-- /.weather-card -->
 
+        <!-- Footer estático — aparece ao rolar até o final, nunca sobrepõe o card -->
+        <footer class="app-footer" id="weatherFooter">
+          <p>&copy; 2024 Clima360. <a href="#" id="privacyBtnWeather">Privacidade & Termos</a></p>
+          <p class="footer-attribution">
+            <i class="wi wi-thermometer" aria-hidden="true"></i>
+            Dados meteorológicos fornecidos por
+            <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+            sob licença
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+          </p>
+        </footer>
+
       </div>
     </section>
 
   </div><!-- /.app -->
-
-  <!-- Footer fixo — sempre visível em ambas as telas -->
-  <footer class="app-footer">
-    <p>&copy; 2024 Clima360. <a href="#" id="privacyBtn">Privacidade & Termos</a></p>
-    <p class="footer-attribution">
-      <i class="wi wi-thermometer" aria-hidden="true"></i>
-      Dados meteorológicos fornecidos por
-      <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
-      sob licença
-      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
-    </p>
-  </footer>
 
   <div id="privacyModal" class="modal-overlay hidden">
     <div class="modal-content">

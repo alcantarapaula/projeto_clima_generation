@@ -793,9 +793,10 @@ if (typeof document !== 'undefined') {
 }
 
 // ── Modal de Privacidade ─────────────────────────
-const privacyBtn   = document.getElementById('privacyBtn');
-const privacyModal = document.getElementById('privacyModal');
-const closePrivacy = document.getElementById('closePrivacy');
+const privacyBtn        = document.getElementById('privacyBtn');
+const privacyBtnWeather = document.getElementById('privacyBtnWeather');
+const privacyModal      = document.getElementById('privacyModal');
+const closePrivacy      = document.getElementById('closePrivacy');
 
 const openPrivacyModal = (e) => {
   e.preventDefault();
@@ -803,6 +804,7 @@ const openPrivacyModal = (e) => {
 };
 
 privacyBtn?.addEventListener('click', openPrivacyModal);
+privacyBtnWeather?.addEventListener('click', openPrivacyModal);
 
 closePrivacy?.addEventListener('click', () => {
   privacyModal?.classList.add('hidden');
