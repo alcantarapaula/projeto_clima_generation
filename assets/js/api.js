@@ -717,7 +717,6 @@ async function selectCity(city) {
 
   searchScreen.classList.add('hidden');
   weatherScreen.classList.remove('hidden');
-  document.body.classList.add('weather-visible');
 
   elCityName.textContent   = city.name;
   elCityRegion.textContent = [city.admin1, city.country].filter(Boolean).join(' · ');
@@ -780,15 +779,13 @@ cityInput?.addEventListener('input', (e) => handleInput(e.target.value));
 backBtn?.addEventListener('click', () => {
   weatherScreen.classList.add('hidden');
   searchScreen.classList.remove('hidden');
-  document.body.classList.remove('weather-visible');
   stopAnimation();
-  applyTheme(); // restaura tema pelo horário local ao voltar para busca
+  applyTheme();
 });
 
 // ── Inicialização ────────────────────────────────
 if (typeof document !== 'undefined') {
   applyTheme();
-  // Reavalia tema na tela de busca a cada minuto (virada de 6h ou 18h)
   setInterval(() => {
     if (!weatherScreen.classList.contains('hidden')) return;
     applyTheme();
@@ -796,10 +793,9 @@ if (typeof document !== 'undefined') {
 }
 
 // ── Modal de Privacidade ─────────────────────────
-const privacyBtn        = document.getElementById('privacyBtn');
-const privacyBtnWeather = document.getElementById('privacyBtnWeather');
-const privacyModal      = document.getElementById('privacyModal');
-const closePrivacy      = document.getElementById('closePrivacy');
+const privacyBtn   = document.getElementById('privacyBtn');
+const privacyModal = document.getElementById('privacyModal');
+const closePrivacy = document.getElementById('closePrivacy');
 
 const openPrivacyModal = (e) => {
   e.preventDefault();
@@ -807,13 +803,11 @@ const openPrivacyModal = (e) => {
 };
 
 privacyBtn?.addEventListener('click', openPrivacyModal);
-privacyBtnWeather?.addEventListener('click', openPrivacyModal);
 
 closePrivacy?.addEventListener('click', () => {
   privacyModal?.classList.add('hidden');
 });
 
-// Fecha ao clicar fora do conteúdo do modal
 privacyModal?.addEventListener('click', (e) => {
   if (e.target === privacyModal) privacyModal.classList.add('hidden');
 });

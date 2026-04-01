@@ -251,10 +251,9 @@ body.lightning-flash {
   gap: 2.75rem;
 }
 
+/* Garante que a caixa de busca e sugestões não fiquem atrás do footer fixo */
 #searchScreen {
-  /* O footer absolute dentro desta tela precisa
-     que o pai seja o contexto de posicionamento */
-  position: fixed;
+  padding-bottom: 5rem;
 }
 
 
@@ -451,7 +450,7 @@ body.lightning-flash {
 #weatherScreen {
   display: block;
   overflow-y: auto;
-  padding: 2rem 1rem 2rem;
+  padding: 2rem 1rem 5rem;
   scrollbar-width: none;
 }
 #weatherScreen::-webkit-scrollbar { display: none; }
@@ -811,43 +810,26 @@ body.lightning-flash {
 html[data-mode="day"]   { --fc-max-color: #c2410c; --fc-min-color: #1d6faa; }
 html[data-mode="night"] { --fc-max-color: #fb923c; --fc-min-color: #60a5fa; }
 
-/* Footer fixo — visível apenas na tela de busca */
+/* Footer fixo — sempre visível em ambas as telas */
 .app-footer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   text-align: center;
-  padding: 0.75rem 1rem 1rem;
+  padding: 0.6rem 1rem 0.8rem;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  z-index: 5;
+  /* z-index menor que as sugestões (200) para não bloquear cliques no mobile */
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
   pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-/* Esconde o footer fixo quando a tela de resultado está ativa */
-body.weather-visible .app-footer {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Footer inline — dentro do scroll da tela de resultado */
-.weather-footer {
-  text-align: center;
-  padding: 1.5rem 1rem 0.5rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
   transition: color 0.8s;
 }
 
-.weather-footer a {
+.app-footer a {
   color: var(--accent);
   text-decoration: none;
   font-weight: 500;
@@ -864,14 +846,6 @@ body.weather-visible .app-footer {
   font-size: 0.8rem;
   margin-right: 0.25rem;
   vertical-align: middle;
-}
-
-.app-footer a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-  margin-left: 8px;
-  pointer-events: auto;
 }
 
 /* Modal de Privacidade */
